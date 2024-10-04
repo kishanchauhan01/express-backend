@@ -40,4 +40,3 @@ const app = express()(async () => {
   }
 })();
 */
-var refresh_token = randomstring.generate(8);
