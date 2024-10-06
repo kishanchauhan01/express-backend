@@ -6,6 +6,8 @@ dotenv.config({
   path: "./env",
 });
 
+//Here we just connect the db and listen to a port
+
 connectDB()
   .then(() => {
     app.on("error", (error) => {
