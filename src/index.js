@@ -6,7 +6,7 @@ dotenv.config({
   path: "./env",
 });
 
-//Here we just connect the db and listen to a port
+//Here we just connect the db and start out server to a port
 
 connectDB()
   .then(() => {
@@ -14,7 +14,7 @@ connectDB()
       console.log("ERROR before listening: ", error);
       throw error;
     });
-    
+
     app.listen(process.env.PORT || 3000, () => {
       console.log(`app is listening on http://localhost:${process.env.PORT}`);
     });
@@ -24,7 +24,9 @@ connectDB()
   });
 
 /*
-const app = express()(async () => {
+const app = express()
+
+(async () => {
   try {
     await mongoose.connect(`${process.env.MONGODB_URI}/${DB_NAME}`);
     app.on("error", (error) => {
