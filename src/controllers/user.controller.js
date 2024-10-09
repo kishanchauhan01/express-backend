@@ -8,7 +8,7 @@ const registerUser = asyncHandler(async (req, res) => {
   const { fullName, email, username, password } = req.body;
   console.log("email: ", email);
 
-  // validation - not empty
+  // validation - fields are not empty
   if (
     [fullName, email, username, password].some((field) => field?.trim() === "")
   ) {

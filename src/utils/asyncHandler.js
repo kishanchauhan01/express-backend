@@ -1,8 +1,10 @@
+//Higher order function return an another function
 const asyncHandler = (requestHandler) => {
-  return (req, res, next) => {
+  return (req, res, next) => {//this is the parameter of the requestHandler.(Because this is the higher order function)
     Promise.resolve(requestHandler(req, res, next)).catch((err) => next(err));
   };
-};
+};//Here we return a function in this higher order function
+
 
 export { asyncHandler };
 
