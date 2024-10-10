@@ -17,7 +17,7 @@ const registerUser = asyncHandler(async (req, res) => {
   } //We can also validate the email contains "@" and domian name or not
 
   // check user already exists: username, email
-  const existedUser = User.findOne({
+  const existedUser = await User.findOne({
     $or: [{ username }, { email }],
   });
 
@@ -25,6 +25,7 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(409, "User already exists");
   }
 
+  console.log("this is file:- ",req.files.avatar[0]);
   // check for images, check for avatar
   const avatarLocalPath = req.files?.avatar[0]?.path;
   const coverLocalPath = req.files?.coverImage[0]?.path;
