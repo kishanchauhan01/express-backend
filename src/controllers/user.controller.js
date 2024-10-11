@@ -7,7 +7,6 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 const registerUser = asyncHandler(async (req, res) => {
   // get user detail from frontend
   const { fullName, email, username, password } = req.body;
-  console.log("email: ", email);
 
   // validation - fields are not empty
   if (
@@ -15,6 +14,9 @@ const registerUser = asyncHandler(async (req, res) => {
   ) {
     throw new ApiError(400, "All fields are required...");
   } //We can also validate the email contains "@" and domian name or not
+  else if (!email.includes("@")) {
+    throw new ApiError(400, "@ is missing in email");
+  }
 
   // check user already exists: username, email
   const existedUser = await User.findOne({
@@ -25,11 +27,9 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(409, "User already exists");
   }
 
-  console.log("this is file:- ",req.files.avatar[0]);
   // check for images, check for avatar
   const avatarLocalPath = req.files?.avatar[0]?.path;
   const coverLocalPath = req.files?.coverImage[0]?.path;
-  console.log(req.files);
 
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar file is required  ");

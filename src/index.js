@@ -6,7 +6,7 @@ dotenv.config({
   path: "./.env",
 });
 
-//Here we just connect the db and start out server to a port
+//Here we just connect the db and start our server to a port
 
 connectDB()
   .then(() => {
