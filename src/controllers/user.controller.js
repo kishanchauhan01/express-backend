@@ -3,21 +3,22 @@ import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import jwt from "jsonwebtoken";
 
-const generateAccessAndRefereshTokens = async (userId) => {
+const generateAccessAndRefreshTokens = async (userId) => {
   try {
     const user = await User.findById(userId);
     const accessToken = user.generateAccessToken();
-    const refreshToken = user.generaterefreshToken();
+    const refreshToken = user.generateRefreshToken();
 
     user.refreshToken = refreshToken;
-    await user.save({ ValidateBeforeSave: false });
+    await user.save({ validateBeforeSave: false });
 
     return { accessToken, refreshToken };
   } catch (error) {
     throw new ApiError(
       500,
-      "Something went wrong while generating referesh and access token"
+      "Something went wrong while generating refresh and access token"
     );
   }
 };
@@ -105,12 +106,15 @@ const loginUser = asyncHandler(async (req, res) => {
   //access and referesh token
   //send cookie -> safe
 
+  //get user data for logIn
   const { email, username, password } = req.body;
 
-  if (!username || !email) {
+  //check whether the user provide necessary data or not
+  if (!(username || email)) {
     throw new ApiError(400, "username or email is required");
   }
 
+  //find ther user in db
   const user = await User.findOne({
     $or: [{ username }, { email }],
   });
@@ -119,13 +123,15 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(404, "User does not exist");
   }
 
+  //Check user password
   const isPasswordValid = await user.isPasswordCorrect(password);
 
   if (!isPasswordValid) {
     throw new ApiError(401, "Invalid user credentials");
   }
 
-  const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(
+  //generate access && refresh tokens
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
     user._id
   );
 
@@ -150,12 +156,86 @@ const loginUser = asyncHandler(async (req, res) => {
           accessToken,
           refreshToken,
         },
-        "User logged in successfully"
+        `User logged in successfully`
       )
     );
 });
 
-export { registerUser, loginUser };
+const logOutUser = asyncHandler(async (req, res) => {
+  //remove the cookie
+  //and remove refreshToken from db
+  await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        refreshToken: undefined,
+      },
+    },
+    {
+      new: true,
+      //this is just, if we store the refrens of this method in a variable in this case we get the updated values other wise we get old values. But if we not store anywhere then we don't need this
+    }
+  );
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, {}, "User logged out"));
+});
+
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  //first access refreshToken from the cookies
+  const incomingRefreshToken =
+    req.cookies.refreshToken || req.body.refreshToken;
+
+  if (!incomingRefreshToken) {
+    throw new ApiError(401, "Unauthorized request");
+  }
+
+  const decodedToken = jwt.verify(
+    incomingRefreshToken,
+    process.env.REFRESH_TOKEN_SECRET
+  );
+
+  const user = await User.findById(decodedToken?._id);
+
+  if (!user) {
+    throw new ApiError(401, "Invalid refresh token");
+  }
+
+  if (incomingRefreshToken !== user?.refreshToken) {
+    throw new ApiError(401, "Refresh token is expired or used");
+  }
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  const { accessToken, newRefreshToken } = await generateAccessAndRefreshTokens(
+    user._id
+  );
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", newRefreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        { accessToken, refreshToken: newRefreshToken },
+        "Access token refreshed"
+      )
+    );
+});
+
+export { registerUser, loginUser, logOutUser };
 
 // get user detail from frontend
 // validation - not empty
@@ -163,6 +243,6 @@ export { registerUser, loginUser };
 // check for images, check for avatar
 // upload them to coudinary, avtar(check)
 // create user object - create an entry in db
-// remove password and referesh token filed from response
+// remove password and refresh token filed from response
 // check for user creation
 // return response
