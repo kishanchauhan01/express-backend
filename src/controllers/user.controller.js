@@ -239,13 +239,55 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   }
 });
 
-export { 
+const changeCurrenPassword = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword, confirmPassword } = req.body;
+
+  const user = await User.findById(req.user?.id);
+
+  //checking the oldPassword is right or wrong
+  const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+
+  //some of validation before changing the password
+  if (!isPasswordCorrect) {
+    //if old password is not matched
+    throw new ApiError(400, "Invalid old password");
+  } else if (oldPassword === newPassword) {
+    // if old and new password is same
+    throw new ApiError(
+      400,
+      "new password must be different from the old one..."
+    );
+  } else if (newPassword !== confirmPassword) {
+    //if new and confirm password is worng
+    throw new ApiError(400, "confirm and new password is not matched");
+  }
+
+  //update password in db
+  user.password = newPassword;
+  await user.save({ validateBeforeSave: false });
+
+  //success flage response to the user
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password changed successfuly"));
+});
+
+const getCurrentUser = asyncHandler(async (req, res) => {
+  return res
+    .status(200)
+    .json(new ApiResponse(200, req.user, "current user fetched successfully"));
+});
+
+export {
   registerUser,
-  loginUser, 
-  logOutUser, 
-  refreshAccessToken
+  loginUser,
+  logOutUser,
+  refreshAccessToken,
+  changeCurrenPassword,
+  getCurrentUser,
 };
 
+//for registration
 // get user detail from frontend
 // validation - not empty
 // check user already exists: username, email
