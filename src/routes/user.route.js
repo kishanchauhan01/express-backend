@@ -3,10 +3,11 @@ import {
   logOutUser,
   registerUser,
   loginUser,
-  refreshAccessToken
+  refreshAccessToken,
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJwt } from "../middlewares/auth.middleware.js";
+import { makeExcelFile } from "../controllers/excel.controller.js";
 
 const router = Router();
 
@@ -28,6 +29,6 @@ router.route("/login").post(loginUser);
 
 //secured routes
 router.route("/logout").post(verifyJwt, logOutUser);
-router.route("/refresh-token").post(refreshAccessToken)
+router.route("/refresh-token").post(refreshAccessToken);
 
 export default router;
