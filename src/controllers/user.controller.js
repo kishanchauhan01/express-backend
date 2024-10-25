@@ -1,9 +1,13 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import {
+  deleteFromCloudinary,
+  uploadOnCloudinary,
+} from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
+import { extractPublicId } from "cloudinary-build-url";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -19,6 +23,22 @@ const generateAccessAndRefreshTokens = async (userId) => {
     throw new ApiError(
       500,
       "Something went wrong while generating refresh and access token"
+    );
+  }
+};
+
+const deletedAvatar = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    //now delete the image from cloudinary
+    const public_id = user.avatar;
+    const isDeletedResponse = deleteFromCloudinary(extractPublicId(public_id));
+
+    return isDeletedResponse;
+  } catch (error) {
+    throw new ApiError(
+      500,
+      "Something went wrong while deleting image from cloudinary"
     );
   }
 };
@@ -310,14 +330,13 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Avatar file is missing");
   }
 
-  //todo: delete old image - assignment
-
+  
   const avatar = await uploadOnCloudinary(avatarLocalPath);
-
+  
   if (!avatar.url) {
     throw new ApiError(400, "Error while uploading avatar");
   }
-
+  
   const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
@@ -329,6 +348,14 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
       new: true,
     }
   ).select("-password");
+  
+  //todo: delete old image - assignment
+  //deleting from coludinary
+  const deleteResponse = await deletedAvatar(req.user?._id);
+
+  if (deleteResponse.result != "ok") {
+    throw new ApiError(500, "error while deleting");
+  }
 
   return res
     .status(200)
