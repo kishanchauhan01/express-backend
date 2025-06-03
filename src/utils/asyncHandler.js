@@ -8,6 +8,8 @@ const asyncHandler = (requestHandler) => {
 
 export { asyncHandler };
 
+//Here, for e.g if store the execution of asyncHandler in a variable then we got a exicutable function and if execute that variable like if name of variable name is hello then if do hello() then our return function from asyncHandler will execute.
+
 // const asyncHandler = (fn) => {async () => {}}// this is same as below code
 
 // const asyncHandler = (fn) => async (req, res, next) => {
